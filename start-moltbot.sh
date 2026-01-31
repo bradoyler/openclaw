@@ -163,8 +163,6 @@ if (config.models?.providers?.anthropic?.models) {
     }
 }
 
-
-
 // Gateway configuration
 config.gateway.port = 18789;
 config.gateway.mode = 'local';
@@ -188,6 +186,12 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
     config.channels.telegram.botToken = process.env.TELEGRAM_BOT_TOKEN;
     config.channels.telegram.enabled = true;
     config.channels.telegram.dmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
+}
+
+// web search via Brave
+if (process.env.BRAVE_API_KEY) {
+    config.tools.web.search.enabled = true;
+    config.tools.web.search.apiKey: process.env.BRAVE_API_KEY
 }
 
 // Discord configuration
