@@ -191,7 +191,7 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
 // web search via Brave
 if (process.env.BRAVE_API_KEY) {
     config.tools.web.search.enabled = true;
-    config.tools.web.search.apiKey = process.env.BRAVE_API_KEY
+    config.tools.web.search.apiKey = process.env.BRAVE_API_KEY;
 }
 
 // Discord configuration
