@@ -278,7 +278,7 @@ if (isOpenAI) {
 // Write updated config
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log('Configuration updated successfully');
-console.log('Config:', JSON.stringify(config, null, 2));
+// console.log('Config:', JSON.stringify(config, null, 2));
 EOFNODE
 
 # ============================================================
