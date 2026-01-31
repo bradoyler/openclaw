@@ -152,6 +152,7 @@ config.agents.defaults = config.agents.defaults || {};
 config.agents.defaults.model = config.agents.defaults.model || {};
 config.gateway = config.gateway || {};
 config.channels = config.channels || {};
+config.tools = config.tools || {};
 
 // Clean up any broken anthropic provider config from previous runs
 // (older versions didn't include required 'name' field)
@@ -190,6 +191,8 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
 
 // web search via Brave
 if (process.env.BRAVE_API_KEY) {
+    config.tools.web = config.tools.web || {};
+    config.tools.web.search = config.tools.web.search || {};
     config.tools.web.search.enabled = true;
     config.tools.web.search.apiKey = process.env.BRAVE_API_KEY;
 }
