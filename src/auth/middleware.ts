@@ -20,6 +20,13 @@ export function isDevMode(env: MoltbotEnv): boolean {
 }
 
 /**
+ * Check if running in E2E test mode (skips CF Access auth but keeps device pairing)
+ */
+export function isE2ETestMode(env: MoltbotEnv): boolean {
+  return env.E2E_TEST_MODE === 'true';
+}
+
+/**
  * Extract JWT from request headers or cookies
  */
 export function extractJWT(c: Context<AppEnv>): string | null {
