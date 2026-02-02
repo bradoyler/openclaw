@@ -8,6 +8,12 @@
 
 set -e
 
+# Export secrets from Worker environment if available
+if [ -n "$GITHUB_TOKEN_SECRET" ]; then
+    export GITHUB_TOKEN="$GITHUB_TOKEN_SECRET"
+    echo "GitHub token loaded from Worker secret"
+fi
+
 # Check if clawdbot gateway is already running - bail early if so
 # Note: CLI is still named "clawdbot" until upstream renames it
 if pgrep -f "clawdbot gateway" > /dev/null 2>&1; then
@@ -313,10 +319,4 @@ if [ -n "$CLAWDBOT_GATEWAY_TOKEN" ]; then
 else
     echo "Starting gateway with device pairing (no token)..."
     exec clawdbot gateway --port 18789 --verbose --allow-unconfigured --bind "$BIND_MODE"
-fi
-
-# Export secrets from Worker environment if available
-if [ -n "$GITHUB_TOKEN" ]; then
-    export GITHUB_TOKEN="$GITHUB_TOKEN"
-    echo "GitHub token loaded from Worker secret"
 fi
