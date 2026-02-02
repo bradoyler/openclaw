@@ -314,3 +314,9 @@ else
     echo "Starting gateway with device pairing (no token)..."
     exec clawdbot gateway --port 18789 --verbose --allow-unconfigured --bind "$BIND_MODE"
 fi
+
+# Export secrets from Worker environment if available
+if [ -n "$GITHUB_TOKEN" ]; then
+    export GITHUB_TOKEN="$GITHUB_TOKEN"
+    echo "GitHub token loaded from Worker secret"
+fi
