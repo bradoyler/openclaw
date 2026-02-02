@@ -33,7 +33,7 @@ mkdir -p "$CONFIG_DIR"
 # ============================================================
 # Check if R2 backup exists by looking for clawdbot.json
 # The BACKUP_DIR may exist but be empty if R2 was just mounted
-# Note: backup structure is $BACKUP_DIR/clawdbot/ and $BACKUP_DIR/clawd/
+# Note: backup structure is $BACKUP_DIR/clawdbot/ and $BACKUP_DIR/skills/
 
 # Helper function to check if R2 backup is newer than local
 should_restore_from_r2() {
@@ -94,26 +94,14 @@ else
     echo "R2 not mounted, starting fresh"
 fi
 
-# Restore full workspace from R2 backup if available (only if R2 is newer)
-WORKSPACE_DIR="/root/clawd"
-if [ -d "$BACKUP_DIR/clawd" ] && [ "$(ls -A $BACKUP_DIR/clawd 2>/dev/null)" ]; then
-    if should_restore_from_r2; then
-        echo "Restoring workspace from $BACKUP_DIR/clawd..."
-        mkdir -p "$WORKSPACE_DIR"
-        cp -a "$BACKUP_DIR/clawd/." "$WORKSPACE_DIR/"
-        echo "Restored workspace from R2 backup"
-    fi
-fi
-
 # Restore skills from R2 backup if available (only if R2 is newer)
-# Legacy: skills are now part of the full workspace restore above
 SKILLS_DIR="/root/clawd/skills"
 if [ -d "$BACKUP_DIR/skills" ] && [ "$(ls -A $BACKUP_DIR/skills 2>/dev/null)" ]; then
     if should_restore_from_r2; then
-        echo "Restoring skills from legacy $BACKUP_DIR/skills..."
+        echo "Restoring skills from $BACKUP_DIR/skills..."
         mkdir -p "$SKILLS_DIR"
         cp -a "$BACKUP_DIR/skills/." "$SKILLS_DIR/"
-        echo "Restored skills from legacy R2 backup"
+        echo "Restored skills from R2 backup"
     fi
 fi
 
@@ -164,7 +152,6 @@ config.agents.defaults = config.agents.defaults || {};
 config.agents.defaults.model = config.agents.defaults.model || {};
 config.gateway = config.gateway || {};
 config.channels = config.channels || {};
-config.tools = config.tools || {};
 
 // Clean up any broken anthropic provider config from previous runs
 // (older versions didn't include required 'name' field)
@@ -175,6 +162,8 @@ if (config.models?.providers?.anthropic?.models) {
         delete config.models.providers.anthropic;
     }
 }
+
+
 
 // Gateway configuration
 config.gateway.port = 18789;
@@ -198,28 +187,28 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
     config.channels.telegram = config.channels.telegram || {};
     config.channels.telegram.botToken = process.env.TELEGRAM_BOT_TOKEN;
     config.channels.telegram.enabled = true;
-    config.channels.telegram.dmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
-}
-
-// web search via Brave
-if (process.env.BRAVE_API_KEY) {
-    config.tools.web = config.tools.web || {};
-    config.tools.web.search = config.tools.web.search || {};
-    config.tools.web.search.enabled = true;
-    config.tools.web.search.provider = 'brave';
-    config.tools.web.search.maxResults = 5;
-    config.tools.web.search.timeoutSeconds = 20;
-    config.tools.web.search.cacheTtlMinutes = 15;
-    config.tools.web.search.apiKey = process.env.BRAVE_API_KEY;
+    const telegramDmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
+    config.channels.telegram.dmPolicy = telegramDmPolicy;
+    // "open" policy requires allowFrom: ["*"]
+    if (telegramDmPolicy === 'open') {
+        config.channels.telegram.allowFrom = ['*'];
+    }
 }
 
 // Discord configuration
+// Note: Discord uses nested dm.policy, not flat dmPolicy like Telegram
+// See: https://github.com/moltbot/moltbot/blob/v2026.1.24-1/src/config/zod-schema.providers-core.ts#L147-L155
 if (process.env.DISCORD_BOT_TOKEN) {
     config.channels.discord = config.channels.discord || {};
     config.channels.discord.token = process.env.DISCORD_BOT_TOKEN;
     config.channels.discord.enabled = true;
+    const discordDmPolicy = process.env.DISCORD_DM_POLICY || 'pairing';
     config.channels.discord.dm = config.channels.discord.dm || {};
-    config.channels.discord.dm.policy = process.env.DISCORD_DM_POLICY || 'pairing';
+    config.channels.discord.dm.policy = discordDmPolicy;
+    // "open" policy requires allowFrom: ["*"]
+    if (discordDmPolicy === 'open') {
+        config.channels.discord.dm.allowFrom = ['*'];
+    }
 }
 
 // Slack configuration
@@ -281,7 +270,7 @@ if (isOpenAI) {
     config.agents.defaults.models['anthropic/claude-opus-4-5-20251101'] = { alias: 'Opus 4.5' };
     config.agents.defaults.models['anthropic/claude-sonnet-4-5-20250929'] = { alias: 'Sonnet 4.5' };
     config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] = { alias: 'Haiku 4.5' };
-    config.agents.defaults.model.primary = 'anthropic/claude-haiku-4-5-20251001';
+    config.agents.defaults.model.primary = 'anthropic/claude-opus-4-5-20251101';
 } else {
     // Default to Anthropic without custom base URL (uses built-in pi-ai catalog)
     config.agents.defaults.model.primary = 'anthropic/claude-opus-4-5';
@@ -290,7 +279,7 @@ if (isOpenAI) {
 // Write updated config
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log('Configuration updated successfully');
-// console.log('Config:', JSON.stringify(config, null, 2));
+console.log('Config:', JSON.stringify(config, null, 2));
 EOFNODE
 
 # ============================================================
@@ -313,10 +302,4 @@ if [ -n "$CLAWDBOT_GATEWAY_TOKEN" ]; then
 else
     echo "Starting gateway with device pairing (no token)..."
     exec clawdbot gateway --port 18789 --verbose --allow-unconfigured --bind "$BIND_MODE"
-fi
-
-# Export secrets from Worker environment if available
-if [ -n "$GITHUB_TOKEN_SECRET" ]; then
-    export GITHUB_TOKEN="$GITHUB_TOKEN_SECRET"
-    echo "GitHub token loaded from Worker secret"
 fi
